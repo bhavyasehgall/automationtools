@@ -30,4 +30,5 @@ git clone https://github.com/bhavyasehgall/automationtools.git
 cd automationtools
 chmod +x nmap.sh
 chmod +x subdomains.sh
+chmod +X directory.sh
 
