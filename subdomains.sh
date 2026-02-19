@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# ====================================
-#   Subdomain Enumeration Automation 
-# ====================================
+# ==========================================
+#  AutomationTools - Subdomain Module
+#  Author: Bhavya Sehgal
+#  Description: Structured subdomain enumeration
+#  Use: Authorized lab environments only
+# ==========================================
 
-# Colors
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
@@ -39,162 +41,36 @@ show_help() {
     echo ""
     exit 0
 }
-
 # ==========================================
-# Smart Tool Checker (Auto Install + Loop)
+# Tool Checker
 # ==========================================
 
 check_tool() {
-
-    tool_name="$1"
-
-    while true; do
-
-        if command -v "$tool_name" &> /dev/null; then
-            return 0
-        fi
-
-        echo -e "${RED}[!] $tool_name is not installed.${NC}"
-        read -p "Do you want to install $tool_name now? (y/n): " choice
-
-        if [[ "$choice" =~ ^[Yy]$ ]]; then
-
-            echo -e "${YELLOW}[+] Installing $tool_name...${NC}"
-
-            case "$tool_name" in
-                subfinder)
-                    go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-                    ;;
-                httpx)
-                    go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-                    ;;
-                amass)
-                    go install -v github.com/owasp-amass/amass/v4/...@master
-                    ;;
-                assetfinder)
-                    go install -v github.com/tomnomnom/assetfinder@latest
-                    ;;
-                findomain)
-                    apt install -y findomain
-                    ;;
-                *)
-                    echo -e "${RED}[!] Unknown tool. Install manually.${NC}"
-                    exit 1
-                    ;;
-            esac
-
-            export PATH=$HOME/go/bin:$PATH
-
-            if command -v "$tool_name" &> /dev/null; then
-                echo -e "${GREEN}[✓] $tool_name installed successfully.${NC}"
-                return 0
-            else
-                echo -e "${RED}[!] Installation failed. Trying again...${NC}"
-            fi
-
-        else
-            echo -e "${RED}[!] $tool_name is required to continue.${NC}"
-        fi
-
-    done
-}
-
-# ==========================================
-# HTTPX Self-Healing Fix
-# ==========================================
-
-fix_httpx() {
-
-    if command -v httpx &> /dev/null; then
-        HTTPX_PATH=$(which httpx)
-        if dpkg -S "$HTTPX_PATH" 2>/dev/null | grep -q "python3-httpx"; then
-            echo -e "${RED}[!] Wrong Python httpx detected. Removing...${NC}"
-            apt remove -y python3-httpx
-        fi
-    fi
-
-    check_tool httpx
-
-    if httpx -version &>/dev/null; then
-        echo -e "${GREEN}[✓] httpx ready.${NC}"
-    else
-        echo -e "${RED}[!] httpx installation failed.${NC}"
+    if ! command -v "$1" &> /dev/null; then
+        echo -e "${RED}[!] $1 is not installed.${NC}"
         exit 1
     fi
 }
 
 # ==========================================
-# Default Settings
+# Parse Arguments
 # ==========================================
 
 domain=""
 auto_live=false
-run_subfinder=false
-run_assetfinder=false
-run_amass=false
-run_findomain=false
 
-# ==========================================
-# Argument Parsing
-# ==========================================
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -d|--domain)
-            domain="$2"
-            shift 2
-            ;;
-        -l|--live)
-            auto_live=true
-            shift
-            ;;
-        --subfinder)
-            run_subfinder=true
-            shift
-            ;;
-        --assetfinder)
-            run_assetfinder=true
-            shift
-            ;;
-        --amass)
-            run_amass=true
-            shift
-            ;;
-        --findomain)
-            run_findomain=true
-            shift
-            ;;
-        --all)
-            run_subfinder=true
-            run_assetfinder=true
-            run_amass=true
-            run_findomain=true
-            shift
-            ;;
-        -h|--help)
-            show_help
-            ;;
-        *)
-            echo -e "${RED}[!] Unknown option: $1${NC}"
-            show_help
-            ;;
-    esac
+while getopts ":d:lh" opt; do
+  case ${opt} in
+    d ) domain=$OPTARG ;;
+    l ) auto_live=true ;;
+    h ) show_help ;;
+    \? ) echo -e "${RED}Invalid option: -$OPTARG${NC}" ; exit 1 ;;
+  esac
 done
 
-# If no tool selected → run all
-if ! $run_subfinder && ! $run_assetfinder && ! $run_amass && ! $run_findomain; then
-    run_subfinder=true
-    run_assetfinder=true
-    run_amass=true
-    run_findomain=true
-fi
-
-# ==========================================
-# Ask Domain If Missing
-# ==========================================
-
+# Ask if missing
 if [ -z "$domain" ]; then
-    read -p "Enter Target Domain: " domain
+    read -p "Enter Target Domain (example.com): " domain
 fi
 
 safe_domain=$(echo "$domain" | tr -cd '[:alnum:]._-')
@@ -205,69 +81,92 @@ if [ -z "$safe_domain" ]; then
 fi
 
 # ==========================================
-# Setup
+# Structured Directories
 # ==========================================
 
-OUTPUT_DIR="recon/$safe_domain"
-mkdir -p "$OUTPUT_DIR"
-temp_file=$(mktemp)
+base_dir="/home/kali/automationtools"
+mkdir -p "$base_dir/subdomains"
+
+timestamp=$(date +"%Y%m%d_%H%M%S")
+date_now=$(date +"%Y-%m-%d %H:%M:%S")
+
+output_file="$base_dir/subdomains/${safe_domain}_subdomains_$timestamp.txt"
+
+# Resolve IP
+ip=$(dig +short "$safe_domain" | head -n 1)
+
+# ==========================================
+# Display Target Info
+# ==========================================
+
+echo ""
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${CYAN} Target Information${NC}"
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${YELLOW}Domain:${NC} $safe_domain"
+echo -e "${YELLOW}IP:${NC} ${ip:-Not Resolved}"
+echo -e "${YELLOW}Date:${NC} $date_now"
+echo ""
+
+# ==========================================
+# Check Required Tools
+# ==========================================
+
+check_tool subfinder
+check_tool assetfinder
+
+# Amass only if enough RAM
 available_ram=$(free -m | awk '/Mem:/ {print $2}')
 
-echo ""
-echo -e "${YELLOW}[+] Starting Enumeration...${NC}"
-echo ""
-
 # ==========================================
-# Run Selected Tools
+# Run Enumeration
 # ==========================================
 
-if $run_subfinder; then
-    check_tool subfinder
-    echo -e "${CYAN}[+] Running Subfinder...${NC}"
-    subfinder -d "$domain" -silent | tee -a "$temp_file"
-fi
+temp_file=$(mktemp)
 
-if $run_assetfinder; then
-    check_tool assetfinder
-    echo -e "${CYAN}[+] Running Assetfinder...${NC}"
-    assetfinder --subs-only "$domain" | tee -a "$temp_file"
-fi
+echo -e "${CYAN}[+] Running Subfinder...${NC}"
+subfinder -d "$safe_domain" -silent | tee -a "$temp_file"
 
-if $run_amass; then
-    if [ "$available_ram" -ge 3000 ]; then
-        check_tool amass
+echo -e "${CYAN}[+] Running Assetfinder...${NC}"
+assetfinder --subs-only "$safe_domain" | tee -a "$temp_file"
+
+if [ "$available_ram" -ge 3000 ]; then
+    if command -v amass &> /dev/null; then
         echo -e "${CYAN}[+] Running Amass (Passive)...${NC}"
-        amass enum -passive -d "$domain" | tee -a "$temp_file"
+        amass enum -passive -d "$safe_domain" | tee -a "$temp_file"
     else
-        echo -e "${YELLOW}[!] RAM too low (<3GB). Skipping Amass to prevent crash.${NC}" 
+        echo -e "${YELLOW}[!] Amass not installed. Skipping.${NC}"
     fi
-fi
-
-if $run_findomain; then
-    check_tool findomain
-    echo -e "${CYAN}[+] Running Findomain...${NC}"
-    findomain -t "$domain" -q | tee -a "$temp_file"
+else
+    echo -e "${YELLOW}[!] RAM <3GB. Skipping Amass for stability.${NC}"
 fi
 
 # ==========================================
-# Clean & Validate Results
+# Clean Results
 # ==========================================
 
 echo ""
 echo -e "${YELLOW}[+] Cleaning Results...${NC}"
 
-grep -i "\.$domain$" "$temp_file" | \
+grep -i "\.$safe_domain$" "$temp_file" | \
 sed 's/^https\?:\/\///' | \
 sed 's/[^a-zA-Z0-9.-]//g' | \
-grep -E "^[a-zA-Z0-9.-]+\.$domain$" | \
+grep -E "^[a-zA-Z0-9.-]+\.$safe_domain$" | \
 grep -v "\.\." | \
-sort -u > "$OUTPUT_DIR/subdomains.txt"
+sort -u > "$output_file"
 
-total=$(wc -l < "$OUTPUT_DIR/subdomains.txt")
 rm "$temp_file"
 
+total=$(wc -l < "$output_file")
+
+if [ "$total" -eq 0 ]; then
+    rm -f "$output_file"
+    echo -e "${RED}[!] No subdomains found.${NC}"
+    exit 0
+fi
+
 echo -e "${GREEN}[✓] Total Unique Subdomains: $total${NC}"
-echo -e "${CYAN}[✓] Saved to: $OUTPUT_DIR/subdomains.txt${NC}"
+echo -e "${CYAN}[✓] Saved to: $output_file${NC}"
 
 # ==========================================
 # Live Check
@@ -281,29 +180,29 @@ fi
 
 if [[ "$live_choice" =~ ^[Yy]$ ]]; then
 
-    fix_httpx
+    check_tool httpx
 
     echo -e "${CYAN}[+] Checking Live Hosts...${NC}"
 
-    temp_live=$(mktemp)
+    live_file="$base_dir/subdomains/${safe_domain}_live_$timestamp.txt"
 
-    httpx -l "$OUTPUT_DIR/subdomains.txt" \
+    httpx -l "$output_file" \
           -silent \
           -threads 40 \
           -timeout 5 \
-          -no-color > "$temp_live"
+          -no-color > "$live_file"
 
-    live_total=$(wc -l < "$temp_live")
+    live_total=$(wc -l < "$live_file")
 
     if [ "$live_total" -gt 0 ]; then
-        mv "$temp_live" "$OUTPUT_DIR/live_subdomains.txt"
         echo -e "${GREEN}[✓] Live Subdomains Found: $live_total${NC}"
-        echo -e "${CYAN}[✓] Saved to: $OUTPUT_DIR/live_subdomains.txt${NC}"
+        echo -e "${CYAN}[✓] Saved to: $live_file${NC}"
     else
-        rm "$temp_live"
+        rm -f "$live_file"
         echo -e "${RED}[!] No live subdomains found.${NC}"
     fi
 fi
 
 echo ""
-echo -e "${GREEN}[✓] Recon Completed Successfully.${NC}"
+echo -e "${GREEN}[✓] Subdomain Recon Completed Successfully.${NC}"
+echo ""
