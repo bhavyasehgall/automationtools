@@ -126,9 +126,55 @@ Example execution flow:
 
 ## 🗂 Project Structure
 
+```bash
+/home/kali/automationtools/
+├── nmap/
+├── subdomains/
+└── directories/
+```
+
+Example Savled Files:
+
+```bash
+nmap/
+└── example.com_info_20260219_184203.txt
+
+subdomains/
+└── example.com_subdomains_20260219_184203.txt
+
+directories/
+└── example.com_gobuster_20260219_184203.txt
+```
+
 ---
+## Example Output:
 
+```bash
+=========================================
+Target Information
+=========================================
 
+Domain: example.com
+IP: 93.184.216.34
+Date: 2026-02-19 18:42:03
+
+[+] Running Subfinder...
+api.example.com
+dev.example.com
+
+[+] Running Findomain...
+mail.example.com
+
+[✓] Total Unique Subdomains Found: 12
+
+Do you want to save the results? (y/n):
+```
+
+Saved Files Examples:
+
+```bash
+/home/kali/automationtools/subdomains/example.com_subdomains_20260219_184203.txt
+```
 ---
 
 ## 🔧 Features
@@ -176,4 +222,23 @@ chmod +x subdomains.sh
 chmod +x directory.sh
 ```
 
+---
+
+## ▶ Usage
+
+Run the Nmap module:
+
+```./nmap.sh```
+
+
+Run Subdomain Enumeration:
+
+```./subdomains.sh```
+
+
+Run Directory Discovery:
+
+```./directory.sh```
+
+Each module will prompt for required input interactively.
 ---
