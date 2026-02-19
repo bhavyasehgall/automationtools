@@ -1,184 +1,169 @@
-# AutomationTools
+AutomationTools
 
-**AutomationTools**  is a structured Bash-based reconnaissance automation suite designed for authorized lab environments.
+AutomationTools is a structured Bash-based reconnaissance automation suite designed for authorized lab environments.
 
 It integrates network scanning, subdomain enumeration, and directory discovery into a modular toolkit focused on reproducibility, organized output management, and maintainable scripting practices.
 
 This project prioritizes structured engineering over ad-hoc scripting.
 
----
+📌 Overview
 
-# 📌 Overview
-
-**AutomationTools** provides a consistent and modular approach to reconnaissance automation.
+AutomationTools provides a consistent and modular approach to reconnaissance automation.
 Each module operates independently while maintaining standardized output formatting and storage structure.
 
 The toolkit ensures:
 
-- Structured target reporting
+Structured target reporting
 
-- Clean result handling
+Clean result handling
 
-- Controlled save workflow
+Controlled save workflow
 
-- Reproducible execution patterns
+Reproducible execution patterns
 
----
-
-# 🎯 Purpose
+🎯 Purpose
 
 The objectives of this project are:
 
-- Automate common reconnaissance workflows
+Automate common reconnaissance workflows
 
-- Standardize output management
+Standardize output management
 
-- Improve reproducibility in security testing
+Improve reproducibility in security testing
 
-- Demonstrate modular Bash scripting practices
+Demonstrate modular Bash scripting practices
 
-- Maintain organized and timestamped result storage
+Maintain organized and timestamped result storage
 
 This repository reflects structured system design rather than one-off automation scripts.
 
----
-
-# 🏗 Architecture
+🏗 Architecture
 
 The toolkit is divided into independent modules:
 
-- nmap.sh — Network scanning module
+nmap.sh — Network scanning module
 
-- subdomains.sh — Subdomain enumeration module
+subdomains.sh — Subdomain enumeration module
 
-- directory.sh — Directory discovery module
+directory.sh — Directory discovery module
 
 Each module follows the same execution lifecycle:
 
-- Prompt for target
+Prompt for target
 
-- Display structured target information (Domain / IP / Date)
+Display structured target information (Domain / IP / Date)
 
-- Execute tools with live output streaming
+Execute tools with live output streaming
 
-- Clean and process results (if applicable)
+Clean and process results (if applicable)
 
-- Ask user confirmation before saving
+Ask user confirmation before saving
 
-- Save results using timestamped filenames
+Save results using timestamped filenames
 
 This ensures consistency across the entire suite.
 
----
-# ⚙️ Modules
-
-# 1️⃣ Nmap Module
+⚙️ Modules
+1️⃣ Nmap Module
 
 Performs:
 
-- Host discovery
+Host discovery
 
-- Port scanning
+Port scanning
 
--Service detection
+Service detection
 
-- OS detection
+OS detection
 
 Features:
 
-- Multiple scan modes (quick / full / service / OS)
+Multiple scan modes (quick / full / service / OS)
 
-- Live streaming output
+Live streaming output
 
-- Structured result storage
----
-# 2️⃣ Subdomain Enumeration Module
+Structured result storage
+
+2️⃣ Subdomain Enumeration Module
 
 Integrates:
 
-- subfinder
+subfinder
 
-- assetfinder
+assetfinder
 
-- findomain
+findomain
 
-- amass (optional, resource-aware)
+amass (optional, resource-aware)
 
 Capabilities:
 
-- Aggregates tool results
+Aggregates tool results
 
-- Cleans and deduplicates output
+Cleans and deduplicates output
 
-- Optional live subdomain checking (via httpx)
+Optional live subdomain checking (via httpx)
 
-- Structured summary output
----
-# 3️⃣ Directory Discovery Module
+Structured summary output
+
+3️⃣ Directory Discovery Module
 
 Supports:
 
-- gobuster
+gobuster
 
-- dirsearch (if configured)
+dirsearch (if configured)
 
 Features:
 
-- Recursive scanning option
+Recursive scanning option
 
-- Default or custom wordlist support
+Default or custom wordlist support
 
-- Live terminal streaming
+Live terminal streaming
 
-- Organized, timestamped output
----
-# 🔄 Workflow
+Organized, timestamped output
+
+🔄 Workflow
 
 Example execution flow:
 
-1. Run module
+Run the desired module
 
-2. Enter target
+Enter target
 
-3. View structured target details
+View structured target details
 
-4. Observe live scanning progress
+Observe live scanning progress
 
-5. Review summarized results
+Review summarized results
 
-6. Confirm whether to save
+Confirm whether to save
 
-7. Results stored in standardized directory
----
-# 🗂 Project Structure
+Results stored in standardized directory
 
+🗂 Project Structure
 /home/kali/automationtools/
-
 ├── nmap/
-
 ├── subdomains/
-
 └── directories/
 
 
 Example saved files:
 
 nmap/
-
 └── example.com_info_20260219_184203.txt
 
 subdomains/
-
 └── example.com_subdomains_20260219_184203.txt
 
 directories/
-
 └── example.com_gobuster_20260219_184203.txt
 
-This directory design prevents result clutter and maintains organized scan records.
----
-# 📌 Example Output
 
+This directory design prevents result clutter and maintains organized scan records.
+
+📌 Example Output
 =========================================
  Target Information
 =========================================
@@ -197,47 +182,124 @@ mail.example.com
 
 Do you want to save the results? (y/n):
 
+
 Saved file example:
 
 /home/kali/automationtools/subdomains/example.com_subdomains_20260219_184203.txt
----
-# 🔧 Features
 
-- Modular reconnaissance automation
+🔧 Features
 
-- Structured and timestamped output storage
+Modular reconnaissance automation
 
-- Live terminal output streaming
+Structured and timestamped output storage
 
-- Deduplicated enumeration results
+Live terminal output streaming
 
-- Optional live subdomain validation
+Deduplicated enumeration results
 
-- Resource-aware execution
+Optional live subdomain validation
 
-- Manual confirmation before saving
+Resource-aware execution
 
-- Consistent output formatting across modules
----
+Manual confirmation before saving
 
-# 📦 Prerequisites
+Consistent output formatting across modules
 
-Install the required tools:
+📦 Prerequisites
 
-- nmap
+Ensure the following tools are installed and available in your system PATH:
 
-- subfinder
+nmap
 
- - assetfinder
+subfinder
 
-- findomain
+assetfinder
 
-- amass (optional)
+findomain
 
-- httpx (for live subdomain checking)
+amass (optional)
 
-- gobuster
+httpx (for live subdomain checking)
 
-- dirsearch (optional)
+gobuster
 
-Ensure they are available in your system PATH.
+dirsearch (optional)
+
+🚀 Installation
+
+Clone the repository:
+
+git clone https://github.com/bhavyasehgall/automationtools.git
+cd automationtools
+
+
+Make scripts executable:
+
+chmod +x nmap.sh
+chmod +x subdomains.sh
+chmod +x directory.sh
+
+▶ Usage
+
+Run Nmap module:
+
+./nmap.sh
+
+
+Run Subdomain Enumeration:
+
+./subdomains.sh
+
+
+Run Directory Discovery:
+
+./directory.sh
+
+
+Each module will prompt for required input interactively.
+
+🧠 Design Principles
+
+This project is built around:
+
+Modularity
+
+Reproducibility
+
+Maintainability
+
+Structured logging
+
+Controlled execution
+
+The goal is to demonstrate disciplined scripting practices in Bash rather than rapid, unstructured automation.
+
+🛣 Roadmap
+
+Future enhancements may include:
+
+Central master script controller
+
+JSON output export option
+
+Logging verbosity levels
+
+Configurable default wordlists
+
+Automated dependency checker
+
+Dockerized environment
+
+🛡 Intended Use
+
+This toolkit is developed strictly for:
+
+Authorized lab environments
+
+Educational cybersecurity research
+
+Controlled testing scenarios
+
+Users are solely responsible for ensuring they have explicit authorization before scanning any target.
+
+Unauthorized usage may violate applicable laws and regulations.
