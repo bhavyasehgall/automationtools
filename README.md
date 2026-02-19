@@ -133,7 +133,7 @@ Example execution flow:
 └── directories/
 ```
 
-Example Savled Files:
+Example Saved Files:
 
 ```bash
 nmap/
@@ -170,7 +170,7 @@ mail.example.com
 Do you want to save the results? (y/n):
 ```
 
-Saved Files Examples:
+Saved File Example:
 
 ```bash
 /home/kali/automationtools/subdomains/example.com_subdomains_20260219_184203.txt
@@ -241,4 +241,55 @@ Run Directory Discovery:
 ```./directory.sh```
 
 Each module will prompt for required input interactively.
+
 ---
+
+## 🧠 Design Principles
+
+This project is built around:
+
+- Modularity
+
+- Reproducibility
+
+- Maintainability
+
+- Structured logging
+
+- Controlled execution
+
+The goal is to demonstrate disciplined scripting practices in Bash rather than rapid, unstructured automation.
+
+---
+
+## 🛣 Roadmap
+
+Future enhancements may include:
+
+- Central master script controller
+
+- JSON output export option
+
+- Logging verbosity levels
+
+- Configurable default wordlists
+
+- Automated dependency checker
+
+- Dockerized environment
+
+---
+
+## 🛡 Intended Use
+
+This toolkit is developed strictly for:
+
+- Authorized lab environments
+
+- Educational cybersecurity research
+
+- Controlled testing scenarios
+
+Users are solely responsible for ensuring they have explicit authorization before scanning any target.
+
+Unauthorized usage may violate applicable laws and regulations.
