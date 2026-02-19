@@ -68,3 +68,85 @@ Each module follows the same execution lifecycle:
 - Save results using timestamped filenames
 
 This ensures consistency across the entire suite.
+
+---
+# ⚙️ Modules
+
+# 1️⃣ Nmap Module
+
+Performs:
+
+- Host discovery
+
+- Port scanning
+
+-Service detection
+
+- OS detection
+
+Features:
+
+- Multiple scan modes (quick / full / service / OS)
+
+- Live streaming output
+
+- Structured result storage
+---
+# 2️⃣ Subdomain Enumeration Module
+
+Integrates:
+
+- subfinder
+
+- assetfinder
+
+- findomain
+
+- amass (optional, resource-aware)
+
+Capabilities:
+
+- Aggregates tool results
+
+- Cleans and deduplicates output
+
+- Optional live subdomain checking (via httpx)
+
+- Structured summary output
+---
+# 3️⃣ Directory Discovery Module
+
+Supports:
+
+- gobuster
+
+- dirsearch (if configured)
+
+Features:
+
+- Recursive scanning option
+
+- Default or custom wordlist support
+
+- Live terminal streaming
+
+- Organized, timestamped output
+---
+# 🔄 Workflow
+
+Example execution flow:
+
+Run module
+
+Enter target
+
+View structured target details
+
+Observe live scanning progress
+
+Review summarized results
+
+Confirm whether to save
+
+Results stored in standardized directory
+---
