@@ -19,7 +19,7 @@ CYAN='\033[1;36m'
 NC='\033[0m'
 
 # ==============================
-# Tool Check
+# Check Nmap
 # ==============================
 if ! command -v nmap &> /dev/null; then
     echo -e "${RED}[!] Nmap is not installed. Install using: sudo apt install nmap${NC}"
@@ -29,7 +29,7 @@ fi
 # ==============================
 # Target Input
 # ==============================
-read -p "Enter Target IP or Domain: " target
+read -p "Enter Target Domain or IP: " target
 
 safe_target=$(echo "$target" | tr -cd '[:alnum:]._-')
 
@@ -38,17 +38,82 @@ if [ -z "$safe_target" ]; then
     exit 1
 fi
 
+ip=$(dig +short "$safe_target" | head -n 1 || true)
+date_now=$(date +"%Y-%m-%d %H:%M:%S")
+timestamp=$(date +"%Y%m%d_%H%M%S")
+
 # ==============================
-# Directory Setup
+# Directory Structure
 # ==============================
-BASE_DIR="results/$safe_target/nmap"
-mkdir -p "$BASE_DIR"
+BASE_DIR="/home/kali/automationtools"
+NMAP_DIR="$BASE_DIR/nmap"
+mkdir -p "$NMAP_DIR"
+
+# ==============================
+# Display Target Info
+# ==============================
+echo ""
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${CYAN} Target Information${NC}"
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${YELLOW}Target:${NC} $safe_target"
+echo -e "${YELLOW}IP:${NC} ${ip:-Not Resolved}"
+echo -e "${YELLOW}Date:${NC} $date_now"
+echo ""
 
 # ==============================
 # Root Check
 # ==============================
 is_root() {
     [ "$EUID" -eq 0 ]
+}
+
+# ==============================
+# Scan Function
+# ==============================
+run_scan() {
+
+    local command="$1"
+    local label="$2"
+    local use_sudo="$3"
+
+    temp_file=$(mktemp)
+
+    echo -e "${YELLOW}[+] Running $label...${NC}"
+    echo ""
+
+    {
+        echo "========================================="
+        echo "Scan Date: $date_now"
+        echo "Target: $safe_target"
+        echo "IP: ${ip:-Not Resolved}"
+        echo "Command: nmap $command $safe_target"
+        echo "========================================="
+        echo ""
+    } > "$temp_file"
+
+    if [ "$use_sudo" = "true" ]; then
+        sudo nmap $command "$safe_target" | tee -a "$temp_file"
+    else
+        nmap $command "$safe_target" | tee -a "$temp_file"
+    fi
+
+    echo ""
+    echo -e "${GREEN}[✓] Scan Completed${NC}"
+    echo ""
+
+    read -p "Do you want to save the results? (y/n): " save_choice
+
+    if [[ "$save_choice" =~ ^[Yy]$ ]]; then
+        output_file="$NMAP_DIR/${safe_target}_${label}_${timestamp}.txt"
+        mv "$temp_file" "$output_file"
+        echo -e "${GREEN}[✓] Saved to: $output_file${NC}"
+    else
+        rm -f "$temp_file"
+        echo -e "${YELLOW}[!] Results discarded.${NC}"
+    fi
+
+    echo ""
 }
 
 # ==============================
@@ -87,62 +152,10 @@ show_help() {
 }
 
 # ==============================
-# Scan Function
-# ==============================
-run_scan() {
-
-    local command="$1"
-    local use_sudo="$2"
-
-    temp_file=$(mktemp)
-
-    echo -e "${YELLOW}[+] Running Scan...${NC}"
-
-    {
-        echo "Scan Date: $(date)"
-        echo "Target: $target"
-        echo "Command: nmap $command $target"
-        echo "========================================="
-        echo ""
-    } > "$temp_file"
-
-    if [ "$use_sudo" = "true" ]; then
-        sudo nmap $command "$target" | tee -a "$temp_file"
-    else
-        nmap $command "$target" | tee -a "$temp_file"
-    fi
-
-    status=$?
-
-    if [ $status -ne 0 ]; then
-        rm "$temp_file"
-        echo -e "${RED}[!] Scan failed.${NC}"
-        return
-    fi
-
-    echo ""
-    echo -e "${GREEN}[✓] Scan completed successfully.${NC}"
-    echo ""
-
-    read -p "Do you want to save the results? (y/n): " save_choice
-
-    if [[ "$save_choice" =~ ^[Yy]$ ]]; then
-        read -p "Enter file name (without extension): " filename
-        filename=${filename:-scan_$(date +%Y%m%d_%H%M%S)}
-        mv "$temp_file" "$BASE_DIR/$filename.txt"
-        echo -e "${GREEN}[✓] Saved as $BASE_DIR/$filename.txt${NC}"
-    else
-        rm "$temp_file"
-        echo -e "${YELLOW}[!] Results not saved.${NC}"
-    fi
-}
-
-# ==============================
 # Main Menu
 # ==============================
 while true
 do
-    echo ""
     echo -e "${CYAN}=========== Nmap Scan Menu ===========${NC}"
     echo "1) Help"
     echo "2) Host Discovery"
@@ -150,7 +163,8 @@ do
     echo "4) Full Port Scan"
     echo "5) Service & Default Script Scan"
     echo "6) OS Detection"
-    echo "7) Custom Scan"
+    echo "7) Aggressive Scan"
+    echo "8) Custom Scan"
     echo "0) Exit"
     echo "======================================="
     read -p "Choose an option: " choice
@@ -160,30 +174,37 @@ do
             show_help
             ;;
         2)
-            run_scan "-sn" "false"
+            run_scan "-sn" "host_discovery" "false"
             ;;
         3)
-            run_scan "-T4" "false"
+            run_scan "-T4" "quick_scan" "false"
             ;;
         4)
-            run_scan "-p- -T4" "false"
+            run_scan "-p- -T4" "full_port_scan" "false"
             ;;
         5)
-            run_scan "-sV -sC" "false"
+            run_scan "-sV -sC" "service_scan" "false"
             ;;
         6)
             if is_root; then
-                run_scan "-O" "false"
+                run_scan "-O" "os_detection" "false"
             else
-                run_scan "-O" "true"
+                run_scan "-O" "os_detection" "true"
             fi
             ;;
         7)
+            if is_root; then
+                run_scan "-A -T4" "aggressive_scan" "false"
+            else
+                run_scan "-A -T4" "aggressive_scan" "true"
+            fi
+            ;;
+        8)
             read -p "Enter custom Nmap arguments (exclude 'nmap' and target): " custom_args
-            if [[ "$custom_args" == *"nmap"* ]] || [[ "$custom_args" == *"$target"* ]]; then
+            if [[ "$custom_args" == *"nmap"* ]] || [[ "$custom_args" == *"$safe_target"* ]]; then
                 echo -e "${RED}[!] Invalid custom arguments.${NC}"
             else
-                run_scan "$custom_args" "false"
+                run_scan "$custom_args" "custom_scan" "false"
             fi
             ;;
         0)
