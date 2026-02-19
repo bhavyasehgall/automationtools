@@ -136,17 +136,59 @@ Features:
 
 Example execution flow:
 
-Run module
+1. Run module
 
-Enter target
+2. Enter target
 
-View structured target details
+3. View structured target details
 
-Observe live scanning progress
+4. Observe live scanning progress
 
-Review summarized results
+5. Review summarized results
 
-Confirm whether to save
+6. Confirm whether to save
 
-Results stored in standardized directory
+7. Results stored in standardized directory
 ---
+# 🗂 Project Structure
+
+/home/kali/automationtools/
+├── nmap/
+├── subdomains/
+└── directories/
+
+Example saved files:
+
+nmap/
+└── example.com_info_20260219_184203.txt
+
+subdomains/
+└── example.com_subdomains_20260219_184203.txt
+
+directories/
+└── example.com_gobuster_20260219_184203.txt
+
+This directory design prevents result clutter and maintains organized scan records.
+---
+# 📌 Example Output
+=========================================
+ Target Information
+=========================================
+Domain: example.com
+IP: 93.184.216.34
+Date: 2026-02-19 18:42:03
+
+[+] Running Subfinder...
+api.example.com
+dev.example.com
+
+[+] Running Findomain...
+mail.example.com
+
+[✓] Total Unique Subdomains Found: 12
+
+Do you want to save the results? (y/n):
+
+Saved file example:
+
+/home/kali/automationtools/subdomains/example.com_subdomains_20260219_184203.txt
