@@ -7,6 +7,8 @@
 #  Use: Authorized lab environments only
 # ==========================================
 
+set -euo pipefail
+
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
@@ -19,37 +21,46 @@ NC='\033[0m'
 
 show_help() {
     echo ""
-    echo "Subdomain Enumeration Automation Tool"
-    echo "--------------------------------------"
+    echo "=============================================="
+    echo " AutomationTools - Subdomain Enumeration"
+    echo "=============================================="
     echo ""
     echo "Usage:"
-    echo "  $0 [options]"
+    echo "  $0 -d <domain> [options]"
     echo ""
     echo "Options:"
-    echo "  -d, --domain <domain>     Target domain"
-    echo "  -l, --live                Auto check live subdomains"
-    echo "  --subfinder               Run Subfinder only"
-    echo "  --assetfinder             Run Assetfinder only"
-    echo "  --amass                   Run Amass only"
-    echo "  --findomain               Run Findomain only"
-    echo "  --all                     Run all tools (default)"
-    echo "  -h, --help                Show help"
+    echo "  -d <domain>     Specify target domain"
+    echo "  -l              Auto check live subdomains"
+    echo "  -h, --help      Show this help menu"
+    echo ""
+    echo "Description:"
+    echo "  This tool performs structured subdomain"
+    echo "  enumeration using multiple engines:"
+    echo "    • Subfinder"
+    echo "    • Assetfinder"
+    echo "    • Findomain"
+    echo "    • Amass (if RAM >= 3GB)"
+    echo ""
+    echo "  Results are cleaned, deduplicated,"
+    echo "  and optionally saved to:"
+    echo "    /home/kali/automationtools/subdomains/"
     echo ""
     echo "Examples:"
-    echo "  $0 -d example.com --subfinder"
-    echo "  $0 -d example.com --amass -l"
+    echo "  $0 -d example.com"
+    echo "  $0 -d example.com -l"
+    echo ""
+    echo "Use only in authorized lab environments."
+    echo "=============================================="
     echo ""
     exit 0
 }
+
 # ==========================================
 # Tool Checker
 # ==========================================
 
 check_tool() {
-    if ! command -v "$1" &> /dev/null; then
-        echo -e "${RED}[!] $1 is not installed.${NC}"
-        exit 1
-    fi
+    command -v "$1" &> /dev/null
 }
 
 # ==========================================
@@ -59,18 +70,30 @@ check_tool() {
 domain=""
 auto_live=false
 
-while getopts ":d:lh" opt; do
-  case ${opt} in
-    d ) domain=$OPTARG ;;
-    l ) auto_live=true ;;
-    h ) show_help ;;
-    \? ) echo -e "${RED}Invalid option: -$OPTARG${NC}" ; exit 1 ;;
-  esac
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d)
+            domain="$2"
+            shift 2
+            ;;
+        -l)
+            auto_live=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        *)
+            echo -e "${RED}[!] Unknown option: $1${NC}"
+            echo "Use -h or --help for usage."
+            exit 1
+            ;;
+    esac
 done
 
-# Ask if missing
+# Ask if domain missing
 if [ -z "$domain" ]; then
-    read -p "Enter Target Domain (example.com): " domain
+    read -p "Enter Target Domain: " domain
 fi
 
 safe_domain=$(echo "$domain" | tr -cd '[:alnum:]._-')
@@ -81,19 +104,17 @@ if [ -z "$safe_domain" ]; then
 fi
 
 # ==========================================
-# Structured Directories
+# Directory Structure
 # ==========================================
 
-base_dir="/home/kali/automationtools"
-mkdir -p "$base_dir/subdomains"
+BASE_DIR="/home/kali/automationtools"
+SUB_DIR="$BASE_DIR/subdomains"
+mkdir -p "$SUB_DIR"
 
 timestamp=$(date +"%Y%m%d_%H%M%S")
 date_now=$(date +"%Y-%m-%d %H:%M:%S")
 
-output_file="$base_dir/subdomains/${safe_domain}_subdomains_$timestamp.txt"
-
-# Resolve IP
-ip=$(dig +short "$safe_domain" | head -n 1)
+ip=$(dig +short "$safe_domain" | head -n 1 || true)
 
 # ==========================================
 # Display Target Info
@@ -109,67 +130,101 @@ echo -e "${YELLOW}Date:${NC} $date_now"
 echo ""
 
 # ==========================================
-# Check Required Tools
-# ==========================================
-
-check_tool subfinder
-check_tool assetfinder
-
-# Amass only if enough RAM
-available_ram=$(free -m | awk '/Mem:/ {print $2}')
-
-# ==========================================
-# Run Enumeration
+# Run Enumeration (Live Output Enabled)
 # ==========================================
 
 temp_file=$(mktemp)
 
 echo -e "${CYAN}[+] Running Subfinder...${NC}"
-subfinder -d "$safe_domain" -silent | tee -a "$temp_file"
+if check_tool subfinder; then
+    subfinder -d "$safe_domain" -silent | tee -a "$temp_file"
+else
+    echo -e "${YELLOW}[!] Subfinder not installed. Skipping.${NC}"
+fi
 
 echo -e "${CYAN}[+] Running Assetfinder...${NC}"
-assetfinder --subs-only "$safe_domain" | tee -a "$temp_file"
-
-if [ "$available_ram" -ge 3000 ]; then
-    if command -v amass &> /dev/null; then
-        echo -e "${CYAN}[+] Running Amass (Passive)...${NC}"
-        amass enum -passive -d "$safe_domain" | tee -a "$temp_file"
-    else
-        echo -e "${YELLOW}[!] Amass not installed. Skipping.${NC}"
-    fi
+if check_tool assetfinder; then
+    assetfinder --subs-only "$safe_domain" | tee -a "$temp_file"
 else
-    echo -e "${YELLOW}[!] RAM <3GB. Skipping Amass for stability.${NC}"
+    echo -e "${YELLOW}[!] Assetfinder not installed. Skipping.${NC}"
+fi
+
+echo -e "${CYAN}[+] Running Findomain...${NC}"
+if check_tool findomain; then
+    findomain -t "$safe_domain" -q | tee -a "$temp_file"
+else
+    echo -e "${YELLOW}[!] Findomain not installed. Skipping.${NC}"
+fi
+
+available_ram=$(free -m | awk '/Mem:/ {print $2}')
+if [ "$available_ram" -ge 3000 ] && check_tool amass; then
+    echo -e "${CYAN}[+] Running Amass (Passive)...${NC}"
+    amass enum -passive -d "$safe_domain" | tee -a "$temp_file"
+else
+    echo -e "${YELLOW}[!] Skipping Amass (low RAM or not installed).${NC}"
 fi
 
 # ==========================================
 # Clean Results
 # ==========================================
 
-echo ""
-echo -e "${YELLOW}[+] Cleaning Results...${NC}"
+clean_file=$(mktemp)
 
 grep -i "\.$safe_domain$" "$temp_file" | \
 sed 's/^https\?:\/\///' | \
 sed 's/[^a-zA-Z0-9.-]//g' | \
 grep -E "^[a-zA-Z0-9.-]+\.$safe_domain$" | \
 grep -v "\.\." | \
-sort -u > "$output_file"
+sort -u > "$clean_file"
 
 rm "$temp_file"
 
-total=$(wc -l < "$output_file")
+total=$(wc -l < "$clean_file")
 
 if [ "$total" -eq 0 ]; then
-    rm -f "$output_file"
+    rm -f "$clean_file"
     echo -e "${RED}[!] No subdomains found.${NC}"
     exit 0
 fi
 
-echo -e "${GREEN}[✓] Total Unique Subdomains: $total${NC}"
-echo -e "${CYAN}[✓] Saved to: $output_file${NC}"
+echo ""
+echo -e "${GREEN}[✓] Total Unique Subdomains Found: $total${NC}"
+echo ""
 
 # ==========================================
-# Live Check
+# Ask Before Saving
+# ==========================================
+
+read -p "Do you want to save the results? (y/n): " save_choice
+
+if [[ "$save_choice" =~ ^[Yy]$ ]]; then
+
+    output_file="$SUB_DIR/${safe_domain}_subdomains_$timestamp.txt"
+
+    {
+        echo "========================================="
+        echo "Scan Date: $date_now"
+        echo "Domain: $safe_domain"
+        echo "IP: ${ip:-Not Resolved}"
+        echo "========================================="
+        echo ""
+        cat "$clean_file"
+    } > "$output_file"
+
+    echo -e "${GREEN}[✓] Saved to: $output_file${NC}"
+
+else
+    echo -e "${YELLOW}[!] Results discarded.${NC}"
+fi
+
+rm -f "$clean_file"
+
+echo ""
+echo -e "${GREEN}[✓] Subdomain Recon Completed Successfully.${NC}"
+echo ""
+
+# ==========================================
+# Ask to Check Live Subdomains
 # ==========================================
 
 if $auto_live; then
@@ -180,29 +235,45 @@ fi
 
 if [[ "$live_choice" =~ ^[Yy]$ ]]; then
 
-    check_tool httpx
+    if ! check_tool httpx; then
+        echo -e "${RED}[!] httpx is not installed. Install it to check live hosts.${NC}"
+        exit 1
+    fi
 
-    echo -e "${CYAN}[+] Checking Live Hosts...${NC}"
+    echo ""
+    echo -e "${CYAN}[+] Checking Live Subdomains...${NC}"
+    echo ""
 
-    live_file="$base_dir/subdomains/${safe_domain}_live_$timestamp.txt"
+    live_temp=$(mktemp)
 
-    httpx -l "$output_file" \
-          -silent \
-          -threads 40 \
-          -timeout 5 \
-          -no-color > "$live_file"
+    # Use cleaned file if not saved
+    if [ -f "$clean_file" ]; then
+        input_file="$clean_file"
+    else
+        input_file="$output_file"
+    fi
 
-    live_total=$(wc -l < "$live_file")
+    httpx -silent -l "$input_file" | tee -a "$live_temp"
+
+    live_total=$(wc -l < "$live_temp")
+
+    echo ""
+    echo -e "${GREEN}[✓] Live Subdomains Found: $live_total${NC}"
+    echo ""
 
     if [ "$live_total" -gt 0 ]; then
-        echo -e "${GREEN}[✓] Live Subdomains Found: $live_total${NC}"
-        echo -e "${CYAN}[✓] Saved to: $live_file${NC}"
+        read -p "Do you want to save live results? (y/n): " save_live
+
+        if [[ "$save_live" =~ ^[Yy]$ ]]; then
+            live_file="$SUB_DIR/${safe_domain}_live_$timestamp.txt"
+            mv "$live_temp" "$live_file"
+            echo -e "${GREEN}[✓] Live results saved to: $live_file${NC}"
+        else
+            rm -f "$live_temp"
+            echo -e "${YELLOW}[!] Live results discarded.${NC}"
+        fi
     else
-        rm -f "$live_file"
+        rm -f "$live_temp"
         echo -e "${RED}[!] No live subdomains found.${NC}"
     fi
 fi
-
-echo ""
-echo -e "${GREEN}[✓] Subdomain Recon Completed Successfully.${NC}"
-echo ""
