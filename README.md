@@ -153,25 +153,32 @@ Example execution flow:
 # 🗂 Project Structure
 
 /home/kali/automationtools/
+
 ├── nmap/
+
 ├── subdomains/
+
 └── directories/
 
 
 Example saved files:
 
 nmap/
+
 └── example.com_info_20260219_184203.txt
 
 subdomains/
+
 └── example.com_subdomains_20260219_184203.txt
 
 directories/
+
 └── example.com_gobuster_20260219_184203.txt
 
 This directory design prevents result clutter and maintains organized scan records.
 ---
 # 📌 Example Output
+
 =========================================
  Target Information
 =========================================
@@ -193,3 +200,44 @@ Do you want to save the results? (y/n):
 Saved file example:
 
 /home/kali/automationtools/subdomains/example.com_subdomains_20260219_184203.txt
+---
+# 🔧 Features
+
+- Modular reconnaissance automation
+
+- Structured and timestamped output storage
+
+- Live terminal output streaming
+
+- Deduplicated enumeration results
+
+- Optional live subdomain validation
+
+- Resource-aware execution
+
+- Manual confirmation before saving
+
+- Consistent output formatting across modules
+---
+
+# 📦 Prerequisites
+
+Install the required tools:
+
+- nmap
+
+- subfinder
+
+ - assetfinder
+
+- findomain
+
+- amass (optional)
+
+- httpx (for live subdomain checking)
+
+- gobuster
+
+- dirsearch (optional)
+
+Ensure they are available in your system PATH.
