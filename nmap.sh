@@ -1,19 +1,27 @@
 #!/bin/bash
 
-# ==============================
-#     Interactive Nmap Tool
-# ==============================
+# ==========================================
+#  AutomationTools - Nmap Module
+#  Author: Bhavya Sehgal
+#  Description: Structured Nmap automation
+#  Use: Authorized lab environments only
+# ==========================================
 
+set -euo pipefail
+
+# ==============================
 # Colors
+# ==============================
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-# Check if nmap exists
-if ! command -v nmap &> /dev/null
-then
+# ==============================
+# Tool Check
+# ==============================
+if ! command -v nmap &> /dev/null; then
     echo -e "${RED}[!] Nmap is not installed. Install using: sudo apt install nmap${NC}"
     exit 1
 fi
@@ -23,7 +31,6 @@ fi
 # ==============================
 read -p "Enter Target IP or Domain: " target
 
-# Sanitize target
 safe_target=$(echo "$target" | tr -cd '[:alnum:]._-')
 
 if [ -z "$safe_target" ]; then
@@ -31,7 +38,11 @@ if [ -z "$safe_target" ]; then
     exit 1
 fi
 
-mkdir -p "scans/$safe_target"
+# ==============================
+# Directory Setup
+# ==============================
+BASE_DIR="results/$safe_target/nmap"
+mkdir -p "$BASE_DIR"
 
 # ==============================
 # Root Check
@@ -41,7 +52,7 @@ is_root() {
 }
 
 # ==============================
-# Help Function
+# Help Menu
 # ==============================
 show_help() {
     echo ""
@@ -76,7 +87,7 @@ show_help() {
 }
 
 # ==============================
-# Professional Run Scan Function
+# Scan Function
 # ==============================
 run_scan() {
 
@@ -110,16 +121,19 @@ run_scan() {
     fi
 
     echo ""
+    echo -e "${GREEN}[✓] Scan completed successfully.${NC}"
+    echo ""
+
     read -p "Do you want to save the results? (y/n): " save_choice
 
-    if [[ $save_choice == "y" || $save_choice == "Y" ]]; then
+    if [[ "$save_choice" =~ ^[Yy]$ ]]; then
         read -p "Enter file name (without extension): " filename
         filename=${filename:-scan_$(date +%Y%m%d_%H%M%S)}
-        mv "$temp_file" "scans/$safe_target/$filename.txt"
-        echo -e "${GREEN}[✓] Saved as scans/$safe_target/$filename.txt${NC}"
+        mv "$temp_file" "$BASE_DIR/$filename.txt"
+        echo -e "${GREEN}[✓] Saved as $BASE_DIR/$filename.txt${NC}"
     else
         rm "$temp_file"
-        echo -e "${RED}[!] Results not saved.${NC}"
+        echo -e "${YELLOW}[!] Results not saved.${NC}"
     fi
 }
 
@@ -165,17 +179,13 @@ do
             fi
             ;;
         7)
-            echo ""
-            read -p "Enter custom Nmap arguments (DO NOT include 'nmap' or target): " custom_args
-            if [[ "$custom_args" == *"nmap"* ]]; then
-               echo -e "${RED}[!] Do NOT include 'nmap' in arguments.${NC}"
-            elif [[ "$custom_args" == *"$target"* ]]; then
-               echo -e "${RED}[!] Do NOT include the target. It is added automatically.${NC}"
+            read -p "Enter custom Nmap arguments (exclude 'nmap' and target): " custom_args
+            if [[ "$custom_args" == *"nmap"* ]] || [[ "$custom_args" == *"$target"* ]]; then
+                echo -e "${RED}[!] Invalid custom arguments.${NC}"
             else
-               run_scan "$custom_args" "false"
+                run_scan "$custom_args" "false"
             fi
             ;;
-
         0)
             echo -e "${RED}Exiting...${NC}"
             exit 0
