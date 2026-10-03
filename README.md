@@ -2,19 +2,21 @@
 
 **AutomationTools** is a modular Bash-based security automation toolkit for authorized reconnaissance and security testing environments.
 
-It brings together network scanning, passive subdomain enumeration, and web directory discovery through a centralized command-line interface. The project is designed around **modularity, reusable components, dependency awareness, input validation, and organized result storage**.
+It brings together **network scanning, passive subdomain enumeration, and web directory discovery** through a centralized command-line interface.
 
-> **Current version: v2.0.0**
+The project focuses on **modularity, reusable Bash components, dependency awareness, input validation, and organized result management**.
+
+> **Current Version: v2.0.0**
 
 ---
 
 ## 📌 Overview
 
-AutomationTools provides a structured way to perform common reconnaissance tasks without relying on a collection of unrelated scripts.
+AutomationTools provides a structured way to perform common reconnaissance tasks without maintaining a collection of unrelated scripts.
 
-Version 2 introduces a modular architecture with:
+Version 2 introduces a modular architecture built around:
 
-* Central command-line controller
+* Centralized command-line control
 * Independent reconnaissance modules
 * Shared Bash libraries
 * Dependency checking
@@ -25,21 +27,24 @@ Version 2 introduces a modular architecture with:
 * Centralized result storage
 * Consistent logging and output handling
 
-The project is intended primarily for **cybersecurity learning, authorized testing, and controlled lab environments**.
+The project is primarily intended for **cybersecurity learning, authorized testing, CTFs, and controlled lab environments**.
 
 ---
 
 ## 🎯 Objectives
 
-The project focuses on demonstrating practical Bash scripting and security automation concepts:
+AutomationTools was built to practice practical Bash scripting and security automation concepts.
+
+The main objectives are to:
 
 * Automate repetitive reconnaissance tasks
 * Build reusable Bash components
-* Separate application logic from individual modules
+* Separate core logic from individual modules
 * Validate user input before execution
 * Detect required and optional dependencies
-* Maintain consistent result organization
+* Maintain organized and consistent results
 * Provide reproducible command-line workflows
+* Integrate multiple security tools into one workflow
 * Practice maintainable security-tool integration
 
 The goal is not simply to execute security tools, but to demonstrate how multiple tools can be organized into a maintainable automation workflow.
@@ -47,8 +52,6 @@ The goal is not simply to execute security tools, but to demonstrate how multipl
 ---
 
 ## 🏗️ Architecture
-
-AutomationTools follows a modular architecture:
 
 ```text
 AutomationTools/
@@ -74,11 +77,11 @@ AutomationTools/
 
 ### Core Controller
 
-`automationtools.sh`
+### `automationtools.sh`
 
-Acts as the main entry point for the toolkit.
+The main entry point of the toolkit.
 
-Responsibilities include:
+It is responsible for:
 
 * Parsing command-line arguments
 * Selecting modules
@@ -90,11 +93,11 @@ Responsibilities include:
 
 ---
 
-## 📁 Shared Libraries
+# 📁 Shared Libraries
 
-### `lib/common.sh`
+## `lib/common.sh`
 
-Contains reusable functionality shared across modules.
+Contains reusable functionality shared across the toolkit.
 
 Examples include:
 
@@ -108,11 +111,11 @@ Examples include:
 
 ---
 
-### `lib/dependencies.sh`
+## `lib/dependencies.sh`
 
 Handles dependency detection and availability checks.
 
-The toolkit can identify whether required security tools are available before a module executes.
+The toolkit can determine whether supported security tools are available before a module executes.
 
 Supported tools include:
 
@@ -125,11 +128,11 @@ Supported tools include:
 * Dirsearch
 * httpx
 
-Some tools are optional and are used when available.
+Some dependencies are optional and are used when available.
 
 ---
 
-### `lib/validation.sh`
+## `lib/validation.sh`
 
 Provides input validation for module operations.
 
@@ -141,7 +144,7 @@ Validation can include:
 * Wordlist validation
 * Target format checking
 
-This helps prevent invalid input from reaching the underlying security tools.
+This helps prevent invalid input from being passed to underlying security tools.
 
 ---
 
@@ -149,7 +152,7 @@ This helps prevent invalid input from reaching the underlying security tools.
 
 ## 1. Nmap Module
 
-Location:
+**Location:**
 
 ```text
 modules/nmap.sh
@@ -157,46 +160,44 @@ modules/nmap.sh
 
 The Nmap module performs network reconnaissance using configurable scan modes.
 
-### Supported Modes
-
-#### Quick
+### Quick Mode
 
 Designed for a faster scan of common ports.
 
 ```bash
-./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode quick
+./automationtools.sh \
+    -t 192.168.1.1 \
+    -m nmap \
+    --nmap-mode quick
 ```
 
-#### Service
+### Service Mode
 
-Performs service/version detection against common ports.
+Performs service and version detection against common ports.
 
 ```bash
-./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode service
+./automationtools.sh \
+    -t 192.168.1.1 \
+    -m nmap \
+    --nmap-mode service
 ```
 
-#### Full
+### Full Mode
 
 Scans all TCP ports with service detection.
 
 ```bash
-./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode full
-```
-
-### Example
-
-```bash
 ./automationtools.sh \
-    --target 192.168.1.1 \
-    --module nmap \
-    --nmap-mode service
+    -t 192.168.1.1 \
+    -m nmap \
+    --nmap-mode full
 ```
 
 ---
 
 # 2. Subdomain Enumeration Module
 
-Location:
+**Location:**
 
 ```text
 modules/subdomains.sh
@@ -211,7 +212,7 @@ The subdomain module aggregates results from multiple passive enumeration tools 
 * Findomain
 * Amass
 
-Amass is treated as an optional resource-intensive dependency.
+Amass is treated as an optional, potentially resource-intensive dependency.
 
 ### Workflow
 
@@ -223,21 +224,21 @@ The module can:
 4. Remove duplicate results
 5. Sort the output
 6. Optionally identify live hosts using `httpx`
-7. Store the results in the centralized results directory
+7. Store results in the centralized results directory
 
 ### Example
 
 ```bash
 ./automationtools.sh \
-    --target example.com \
-    --module subdomains
+    -t example.com \
+    -m subdomains
 ```
 
 ---
 
 # 3. Directory Discovery Module
 
-Location:
+**Location:**
 
 ```text
 modules/directory.sh
@@ -256,19 +257,19 @@ Gobuster is preferred when available, with Dirsearch available as an alternative
 
 ```bash
 ./automationtools.sh \
-    --url http://example.com \
-    --module directory
+    -u http://example.com \
+    -m directory
 ```
 
 ### Custom Wordlist
 
-A custom wordlist can be supplied using:
+A custom wordlist can be supplied with:
 
 ```bash
 ./automationtools.sh \
-    --url http://example.com \
-    --module directory \
-    --wordlist /path/to/wordlist.txt
+    -u http://example.com \
+    -m directory \
+    -w /path/to/wordlist.txt
 ```
 
 The module can also detect common wordlists available in a Kali Linux environment.
@@ -279,7 +280,7 @@ The module can also detect common wordlists available in a Kali Linux environmen
 
 ## Requirements
 
-AutomationTools is designed for Linux environments, particularly cybersecurity distributions such as Kali Linux.
+AutomationTools is designed for Linux environments, particularly cybersecurity distributions such as **Kali Linux**.
 
 ### Core Requirements
 
@@ -301,19 +302,19 @@ Depending on the module being used:
 
 Not every tool is required for every module.
 
-The toolkit provides dependency checking to identify available tools.
+AutomationTools includes dependency checking to identify which supported tools are currently available.
 
 ---
 
 ## Clone the Repository
 
-Using SSH:
+### SSH
 
 ```bash
 git clone git@github.com:bhavyasehgall/automationtools.git
 ```
 
-Or using HTTPS:
+### HTTPS
 
 ```bash
 git clone https://github.com/bhavyasehgall/automationtools.git
@@ -325,13 +326,13 @@ Enter the project directory:
 cd automationtools
 ```
 
-Make the controller executable:
+Make the main controller executable:
 
 ```bash
 chmod +x automationtools.sh
 ```
 
-If required, module permissions can also be restored:
+If required, restore permissions for libraries and modules:
 
 ```bash
 chmod +x lib/*.sh
@@ -342,7 +343,7 @@ chmod +x modules/*.sh
 
 # ▶️ Usage
 
-The primary interface is:
+The main interface is:
 
 ```bash
 ./automationtools.sh
@@ -354,7 +355,7 @@ The primary interface is:
 ./automationtools.sh --help
 ```
 
-Short form:
+or:
 
 ```bash
 ./automationtools.sh -h
@@ -440,7 +441,7 @@ full
 
 ## Full Workflow
 
-The `full` module option can be used to execute the toolkit's available reconnaissance workflow against a target where supported:
+The `full` option can execute the toolkit's available reconnaissance workflow against a target where supported.
 
 ```bash
 ./automationtools.sh \
@@ -448,19 +449,19 @@ The `full` module option can be used to execute the toolkit's available reconnai
     -m full
 ```
 
-Use this only against targets for which you have explicit authorization.
+> Only use the toolkit against systems, networks, domains, and applications for which you have explicit authorization.
 
 ---
 
 # 📂 Results
 
-AutomationTools stores generated scan output inside:
+AutomationTools stores generated output inside:
 
 ```text
 results/
 ```
 
-This keeps generated data separate from the source code and allows scan results to remain organized.
+This keeps generated scan data separate from the source code and helps maintain an organized project structure.
 
 A typical project state may look like:
 
@@ -479,23 +480,25 @@ AutomationTools/
 
 Result filenames include target information and timestamps where applicable.
 
-The `results/` directory contains a `.gitkeep` file in the repository so the directory structure is preserved while generated scan results remain local.
+The repository contains a `.gitkeep` file inside `results/` so the directory structure remains available in Git while generated scan results remain local.
 
 ---
 
 # 🧪 Validation & Testing
 
-Before running a module, the toolkit performs input validation appropriate to the selected operation.
+Before running a module, AutomationTools performs input validation appropriate to the selected operation.
 
 Examples include:
 
-* Validating domain names
-* Validating IPv4 addresses
-* Validating URLs
-* Checking wordlist paths
-* Checking required dependencies
+* Domain validation
+* IPv4 validation
+* URL validation
+* Wordlist path validation
+* Dependency checks
 
-Bash syntax can also be checked manually:
+### Bash Syntax Checks
+
+Individual files can also be checked manually:
 
 ```bash
 bash -n automationtools.sh
@@ -527,7 +530,7 @@ The toolkit detects available tools instead of assuming every dependency is inst
 
 ### Maintainability
 
-The project separates:
+The project separates responsibilities:
 
 ```text
 Controller
@@ -572,8 +575,8 @@ Potential future improvements include:
 * Configurable output formats
 * Improved logging levels
 * Configuration file support
-* More reconnaissance modules
-* Additional dependency management
+* Additional reconnaissance modules
+* Improved dependency management
 * Better result parsing and summaries
 * Unit-style tests for Bash components
 * Automated CI syntax testing
