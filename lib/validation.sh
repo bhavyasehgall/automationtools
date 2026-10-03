@@ -1,82 +1,43 @@
 #!/usr/bin/env bash
 
-if [[ "${AUTOMATIONTOOLS_VALIDATION_LOADED:-false}" == true ]]; then
-    return
-fi
-
-AUTOMATIONTOOLS_VALIDATION_LOADED=true
-
-validate_domain() {
-
-    local domain="$1"
-
-    if [[ "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
-        return 0
-    fi
-
-    return 1
-}
-
-validate_ip() {
-
-    local ip="$1"
-
-    if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-
-        IFS='.' read -r a b c d <<< "$ip"
-
-        for octet in "$a" "$b" "$c" "$d"; do
-            if (( octet > 255 )); then
-                return 1
-            fi
-        done
-
-        return 0
-    fi
-
-    return 1
-}
+set -Eeuo pipefail
 
 validate_target() {
 
     local target="$1"
 
-    if validate_domain "$target"; then
-        debug "Target validated as domain: $target"
-        return 0
+    if [[ -z "$target" ]]; then
+        die "Target cannot be empty."
     fi
 
-    if validate_ip "$target"; then
-        debug "Target validated as IPv4 address: $target"
-        return 0
+    if [[ "$target" =~ [[:space:]] ]]; then
+        die "Target cannot contain spaces."
     fi
 
-    die "Invalid target: $target"
+    if [[ "$target" =~ ^https?:// ]]; then
+        target="${target#http://}"
+        target="${target#https://}"
+        target="${target%%/*}"
+    fi
+
+    print_success "Target accepted: $target"
 }
 
-validate_url() {
+validate_domain() {
 
-    local url="$1"
+    local domain="$1"
 
-    if [[ "$url" =~ ^https?://[^[:space:]]+$ ]]; then
-        debug "URL validated: $url"
-        return 0
+    if [[ -z "$domain" ]]; then
+        die "Domain cannot be empty."
     fi
 
-    die "Invalid URL: $url"
-}
-
-validate_wordlist() {
-
-    local wordlist="$1"
-
-    if [[ ! -f "$wordlist" ]]; then
-        die "Wordlist does not exist: $wordlist"
+    if [[ "$domain" =~ ^https?:// ]]; then
+        die "For domain enumeration provide the domain without http:// or https://"
     fi
 
-    if [[ ! -r "$wordlist" ]]; then
-        die "Wordlist is not readable: $wordlist"
+    if [[ ! "$domain" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+        die "Invalid domain format."
     fi
 
-    debug "Wordlist validated: $wordlist"
+    print_success "Domain accepted: $domain"
 }
