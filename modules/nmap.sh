@@ -1,92 +1,43 @@
 #!/usr/bin/env bash
 
-nmap_quick() {
+set -Eeuo pipefail
+
+run_nmap_scan() {
 
     local target="$1"
-    local output="$RUN_DIR/nmap_quick.txt"
 
-    info "Running quick Nmap scan against $target..."
+    if ! command -v nmap >/dev/null 2>&1; then
+        print_error "Nmap is not installed."
+        return 1
+    fi
 
-    nmap \
-        --top-ports 100 \
-        -T3 \
-        "$target" \
-        -oN "$output" || {
-            error "Nmap quick scan failed."
-            return 1
-        }
+    local scan_dir="$OUTPUT_DIR/nmap"
 
-    success "Quick Nmap scan completed."
-    info "Output: $output"
-}
+    mkdir -p "$scan_dir"
 
-nmap_service() {
+    local timestamp
+    timestamp="$(get_timestamp)"
 
-    local target="$1"
-    local output="$RUN_DIR/nmap_service.txt"
+    local output_file="$scan_dir/nmap_${timestamp}.txt"
 
-    info "Running service detection against $target..."
+    print_info "Starting Nmap scan against: $target"
 
-    nmap \
-        -sV \
-        --top-ports 100 \
-        -T3 \
-        "$target" \
-        -oN "$output" || {
-            error "Nmap service scan failed."
-            return 1
-        }
+    echo "AutomationTools - Nmap Scan" > "$output_file"
+    echo "Target: $target" >> "$output_file"
+    echo "Timestamp: $timestamp" >> "$output_file"
+    echo "----------------------------------------" >> "$output_file"
 
-    success "Service detection completed."
-    info "Output: $output"
-}
+    if nmap -sV "$target" | tee -a "$output_file"; then
 
-nmap_full() {
+        print_success "Nmap scan completed."
+        print_success "Results: $output_file"
 
-    local target="$1"
-    local output="$RUN_DIR/nmap_full.txt"
+        return 0
 
-    info "Running full TCP port scan against $target..."
-    warning "This scan may take considerably longer."
+    else
 
-    nmap \
-        -sV \
-        -p- \
-        -T3 \
-        "$target" \
-        -oN "$output" || {
-            error "Full Nmap scan failed."
-            return 1
-        }
+        print_error "Nmap scan failed."
+        return 1
 
-    success "Full Nmap scan completed."
-    info "Output: $output"
-}
-
-run_nmap() {
-
-    local target="$1"
-    local mode="${2:-service}"
-
-    save_metadata "$target"
-
-    case "$mode" in
-
-        quick)
-            nmap_quick "$target"
-            ;;
-
-        service)
-            nmap_service "$target"
-            ;;
-
-        full)
-            nmap_full "$target"
-            ;;
-
-        *)
-            die "Unknown Nmap mode: $mode"
-            ;;
-
-    esac
+    fi
 }
