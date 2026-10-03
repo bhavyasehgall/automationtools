@@ -1,94 +1,75 @@
 #!/usr/bin/env bash
 
-find_default_wordlist() {
+set -Eeuo pipefail
 
-    local candidates=(
-        "/usr/share/wordlists/dirb/common.txt"
-        "/usr/share/seclists/Discovery/Web-Content/common.txt"
-        "/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    )
+run_directory_scan() {
 
-    for wordlist in "${candidates[@]}"; do
+    local target="$1"
+    local wordlist="${2:-}"
 
-        if [[ -f "$wordlist" ]]; then
-            echo "$wordlist"
-            return 0
-        fi
+    local scan_dir="$OUTPUT_DIR/directories"
 
-    done
+    mkdir -p "$scan_dir"
 
-    return 1
-}
+    local timestamp
+    timestamp="$(get_timestamp)"
 
-run_directory() {
+    local output_file="$scan_dir/directories_${timestamp}.txt"
 
-    local url="$1"
-    local custom_wordlist="${2:-}"
+    if [[ -z "$wordlist" ]]; then
 
-    local output_dir="$RUN_DIR/directory"
+        if [[ -f "/usr/share/wordlists/dirb/common.txt" ]]; then
+            wordlist="/usr/share/wordlists/dirb/common.txt"
 
-    mkdir -p "$output_dir"
+        elif [[ -f "/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt" ]]; then
+            wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
 
-    local wordlist=""
-
-    if [[ -n "$custom_wordlist" ]]; then
-
-        validate_wordlist "$custom_wordlist"
-
-        wordlist="$custom_wordlist"
-
-    else
-
-        if wordlist="$(find_default_wordlist)"; then
-            info "Using detected wordlist: $wordlist"
         else
-            die "No suitable wordlist found. Use --wordlist."
+            print_warning "No default wordlist found."
+            print_info "Use --wordlist <file>."
+            return 1
         fi
 
     fi
 
-    if command_exists gobuster; then
+    if [[ ! -f "$wordlist" ]]; then
+        print_error "Wordlist not found: $wordlist"
+        return 1
+    fi
 
-        local output="$output_dir/gobuster.txt"
+    if command -v gobuster >/dev/null 2>&1; then
 
-        info "Running Gobuster against $url..."
+        print_info "Running Gobuster..."
 
         gobuster dir \
-            -u "$url" \
+            -u "$target" \
             -w "$wordlist" \
-            -o "$output" \
-            -q || {
-                warning "Gobuster encountered an error."
-            }
+            -o "$output_file"
 
-        if [[ -f "$output" ]]; then
-            success "Gobuster scan completed."
-            info "Output: $output"
-        fi
+        print_success "Directory discovery completed."
+        print_success "Results: $output_file"
 
         return 0
+
     fi
 
-    if command_exists dirsearch; then
+    if command -v dirsearch >/dev/null 2>&1; then
 
-        local output="$output_dir/dirsearch.txt"
-
-        info "Running Dirsearch against $url..."
+        print_info "Running Dirsearch..."
 
         dirsearch \
-            -u "$url" \
+            -u "$target" \
             -w "$wordlist" \
-            --plain-text-report="$output" || {
-                warning "Dirsearch encountered an error."
-            }
+            --output="$output_file"
 
-        if [[ -f "$output" ]]; then
-            success "Dirsearch scan completed."
-            info "Output: $output"
-        fi
+        print_success "Directory discovery completed."
+        print_success "Results: $output_file"
 
         return 0
+
     fi
 
-    die "No directory discovery tool available."
+    print_error "Neither Gobuster nor Dirsearch is installed."
+
+    return 1
 }
