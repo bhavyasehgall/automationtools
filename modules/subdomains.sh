@@ -1,108 +1,74 @@
 #!/usr/bin/env bash
 
-run_subdomains() {
+set -Eeuo pipefail
+
+run_subdomain_scan() {
 
     local target="$1"
 
-    local output_dir="$RUN_DIR/subdomains"
-    local combined="$output_dir/all_subdomains.txt"
+    local scan_dir="$OUTPUT_DIR/subdomains"
 
-    mkdir -p "$output_dir"
+    mkdir -p "$scan_dir"
 
-    info "Starting subdomain enumeration for $target..."
+    local timestamp
+    timestamp="$(get_timestamp)"
 
-    : > "$combined"
+    local raw_file="$scan_dir/raw_${timestamp}.txt"
+    local final_file="$scan_dir/subdomains_${timestamp}.txt"
 
-    if command_exists subfinder; then
+    : > "$raw_file"
 
-        info "Running Subfinder..."
+    print_info "Starting subdomain enumeration: $target"
+
+    if command -v subfinder >/dev/null 2>&1; then
+
+        print_info "Running Subfinder..."
 
         subfinder \
             -d "$target" \
-            -silent \
-            -o "$output_dir/subfinder.txt" || {
-                warning "Subfinder encountered an error."
-            }
+            -silent >> "$raw_file" || true
 
-        cat "$output_dir/subfinder.txt" >> "$combined" 2>/dev/null || true
+    else
+        print_warning "Subfinder not installed."
     fi
 
-    if command_exists assetfinder; then
+    if command -v assetfinder >/dev/null 2>&1; then
 
-        info "Running Assetfinder..."
+        print_info "Running Assetfinder..."
 
         assetfinder \
-            --subs-only "$target" \
-            > "$output_dir/assetfinder.txt" || {
-                warning "Assetfinder encountered an error."
-            }
+            --subs-only "$target" >> "$raw_file" || true
 
-        cat "$output_dir/assetfinder.txt" >> "$combined" 2>/dev/null || true
+    else
+        print_warning "Assetfinder not installed."
     fi
 
-    if command_exists findomain; then
+    if command -v findomain >/dev/null 2>&1; then
 
-        info "Running Findomain..."
+        print_info "Running Findomain..."
 
         findomain \
             -t "$target" \
-            -q \
-            -u "$output_dir/findomain.txt" || {
-                warning "Findomain encountered an error."
-            }
-
-        cat "$output_dir/findomain.txt" >> "$combined" 2>/dev/null || true
-    fi
-
-    if command_exists amass; then
-
-        info "Running Amass passive enumeration..."
-
-        amass enum \
-            -passive \
-            -d "$target" \
-            -o "$output_dir/amass.txt" || {
-                warning "Amass encountered an error."
-            }
-
-        cat "$output_dir/amass.txt" >> "$combined" 2>/dev/null || true
-    fi
-
-    if [[ -s "$combined" ]]; then
-
-        sort -u "$combined" > "$output_dir/subdomains_unique.txt"
-
-        rm -f "$combined"
-
-        local count
-
-        count="$(wc -l < "$output_dir/subdomains_unique.txt" | tr -d ' ')"
-
-        success "Subdomain enumeration completed."
-        info "Unique subdomains found: $count"
-        info "Output: $output_dir/subdomains_unique.txt"
-
-        # Optional live-host detection
-        if command_exists httpx; then
-
-            info "httpx found. Checking live HTTP services..."
-
-            httpx \
-                -silent \
-                -l "$output_dir/subdomains_unique.txt" \
-                -o "$output_dir/live_hosts.txt" || {
-                    warning "httpx encountered an error."
-                }
-
-            if [[ -f "$output_dir/live_hosts.txt" ]]; then
-                success "Live host results saved."
-            fi
-        fi
+            -q >> "$raw_file" || true
 
     else
-
-        warning "No subdomains were discovered."
-
-        rm -f "$combined"
+        print_warning "Findomain not installed."
     fi
+
+    if [[ ! -s "$raw_file" ]]; then
+        print_warning "No subdomains were discovered."
+        rm -f "$raw_file"
+        return 0
+    fi
+
+    sort -u "$raw_file" > "$final_file"
+
+    rm -f "$raw_file"
+
+    local count
+    count="$(wc -l < "$final_file")"
+
+    print_success "Subdomain enumeration completed."
+    print_success "Unique subdomains: $count"
+    print_success "Results: $final_file"
 }
