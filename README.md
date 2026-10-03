@@ -1,53 +1,44 @@
 # AutomationTools
 
-**AutomationTools** is a modular Bash-based security automation toolkit for authorized reconnaissance and security testing environments.
+**AutomationTools** is a modular Bash-based reconnaissance automation toolkit designed for authorized security testing, cybersecurity labs, and learning environments.
 
-It brings together **network scanning, passive subdomain enumeration, and web directory discovery** through a centralized command-line interface.
+It brings together common reconnaissance workflows such as **network scanning, passive subdomain enumeration, and web directory discovery** behind a single command-line interface.
 
-The project focuses on **modularity, reusable Bash components, dependency awareness, input validation, and organized result management**.
+The project focuses on **security automation, reusable Bash components, input validation, dependency awareness, and organized result management** rather than simply executing individual security tools.
 
-> **Current Version: v2.0.0**
+> **Current Version:** `v2.0.0`
 
 ---
 
-## 📌 Overview
+## ⚠️ Authorized Use Only
 
-AutomationTools provides a structured way to perform common reconnaissance tasks without maintaining a collection of unrelated scripts.
+AutomationTools is intended for:
 
-Version 2 introduces a modular architecture built around:
+* Authorized penetration testing
+* Personal security labs
+* CTFs and training environments
+* Systems you own or have explicit permission to test
 
-* Centralized command-line control
-* Independent reconnaissance modules
-* Shared Bash libraries
-* Dependency checking
-* Target and input validation
+Do **not** use this toolkit against systems without authorization.
+
+---
+
+## ✨ Features
+
+* Modular Bash architecture
+* Central command-line interface
+* Network reconnaissance with Nmap
+* Passive subdomain enumeration
+* Directory and web content discovery
+* Dependency detection
+* Target validation
+* URL and wordlist validation
 * Configurable Nmap scan modes
-* Multiple subdomain enumeration tools
-* Gobuster / Dirsearch directory discovery
-* Centralized result storage
+* Multiple enumeration tools
+* Centralized timestamped result storage
 * Consistent logging and output handling
-
-The project is primarily intended for **cybersecurity learning, authorized testing, CTFs, and controlled lab environments**.
-
----
-
-## 🎯 Objectives
-
-AutomationTools was built to practice practical Bash scripting and security automation concepts.
-
-The main objectives are to:
-
-* Automate repetitive reconnaissance tasks
-* Build reusable Bash components
-* Separate core logic from individual modules
-* Validate user input before execution
-* Detect required and optional dependencies
-* Maintain organized and consistent results
-* Provide reproducible command-line workflows
-* Integrate multiple security tools into one workflow
-* Practice maintainable security-tool integration
-
-The goal is not simply to execute security tools, but to demonstrate how multiple tools can be organized into a maintainable automation workflow.
+* Interactive execution mode
+* `--help` and `--version` support
 
 ---
 
@@ -77,45 +68,35 @@ AutomationTools/
 
 ### Core Controller
 
-### `automationtools.sh`
+`automationtools.sh` is the main entry point.
 
-The main entry point of the toolkit.
+It handles:
 
-It is responsible for:
+* Command-line argument parsing
+* Module selection
+* Target validation
+* Dependency checks
+* Result initialization
+* Module execution
+* Help and version information
 
-* Parsing command-line arguments
-* Selecting modules
-* Validating required inputs
-* Initializing result directories
-* Loading shared libraries
-* Coordinating module execution
-* Providing help and version information
+### Shared Libraries
 
----
+#### `lib/common.sh`
 
-# 📁 Shared Libraries
+Provides reusable functionality such as:
 
-## `lib/common.sh`
-
-Contains reusable functionality shared across the toolkit.
-
-Examples include:
-
-* Logging functions
+* Logging
 * Status messages
 * Error handling
 * Timestamp generation
-* Result-directory handling
+* Result directory creation
 * Filename sanitization
-* Common utility functions
+* Shared utility functions
 
----
+#### `lib/dependencies.sh`
 
-## `lib/dependencies.sh`
-
-Handles dependency detection and availability checks.
-
-The toolkit can determine whether supported security tools are available before a module executes.
+Checks whether supported security tools are available before execution.
 
 Supported tools include:
 
@@ -128,211 +109,125 @@ Supported tools include:
 * Dirsearch
 * httpx
 
-Some dependencies are optional and are used when available.
+Not every dependency is required for every module.
+
+#### `lib/validation.sh`
+
+Provides input validation for:
+
+* Domains
+* IPv4 addresses
+* URLs
+* Wordlists
+* Target formats
 
 ---
 
-## `lib/validation.sh`
+# 🔎 Modules
 
-Provides input validation for module operations.
-
-Validation can include:
-
-* Domain validation
-* IPv4 validation
-* URL validation
-* Wordlist validation
-* Target format checking
-
-This helps prevent invalid input from being passed to underlying security tools.
-
----
-
-# ⚙️ Modules
-
-## 1. Nmap Module
-
-**Location:**
-
-```text
-modules/nmap.sh
-```
+## 1. Nmap
 
 The Nmap module performs network reconnaissance using configurable scan modes.
 
-### Quick Mode
-
-Designed for a faster scan of common ports.
+### Quick Scan
 
 ```bash
-./automationtools.sh \
-    -t 192.168.1.1 \
-    -m nmap \
-    --nmap-mode quick
+./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode quick
 ```
 
-### Service Mode
-
-Performs service and version detection against common ports.
+### Service Detection
 
 ```bash
-./automationtools.sh \
-    -t 192.168.1.1 \
-    -m nmap \
-    --nmap-mode service
+./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode service
 ```
 
-### Full Mode
-
-Scans all TCP ports with service detection.
+### Full TCP Scan
 
 ```bash
-./automationtools.sh \
-    -t 192.168.1.1 \
-    -m nmap \
-    --nmap-mode full
+./automationtools.sh -t 192.168.1.1 -m nmap --nmap-mode full
 ```
 
 ---
 
-# 2. Subdomain Enumeration Module
+## 2. Subdomain Enumeration
 
-**Location:**
+The subdomain module can combine results from multiple passive enumeration tools.
 
-```text
-modules/subdomains.sh
-```
-
-The subdomain module aggregates results from multiple passive enumeration tools when they are available.
-
-### Integrated Tools
+Supported tools include:
 
 * Subfinder
 * Assetfinder
 * Findomain
 * Amass
 
-Amass is treated as an optional, potentially resource-intensive dependency.
+Example:
 
-### Workflow
+```bash
+./automationtools.sh -t example.com -m subdomains
+```
 
-The module can:
+The workflow can:
 
 1. Validate the target
 2. Run available enumeration tools
 3. Collect discovered subdomains
-4. Remove duplicate results
-5. Sort the output
-6. Optionally identify live hosts using `httpx`
-7. Store results in the centralized results directory
-
-### Example
-
-```bash
-./automationtools.sh \
-    -t example.com \
-    -m subdomains
-```
+4. Remove duplicates
+5. Sort results
+6. Optionally identify live hosts
+7. Store results in the run directory
 
 ---
 
-# 3. Directory Discovery Module
-
-**Location:**
-
-```text
-modules/directory.sh
-```
+## 3. Directory Discovery
 
 The directory discovery module performs web content discovery against an authorized URL.
 
-### Supported Tools
+Supported tools:
 
 * Gobuster
 * Dirsearch
 
-Gobuster is preferred when available, with Dirsearch available as an alternative.
-
-### Example
+Example:
 
 ```bash
-./automationtools.sh \
-    -u http://example.com \
-    -m directory
+./automationtools.sh -t http://example.com -m directory
 ```
 
-### Custom Wordlist
-
-A custom wordlist can be supplied with:
+Custom wordlist:
 
 ```bash
 ./automationtools.sh \
-    -u http://example.com \
+    -t http://example.com \
     -m directory \
-    -w /path/to/wordlist.txt
+    --wordlist /path/to/wordlist.txt
 ```
-
-The module can also detect common wordlists available in a Kali Linux environment.
 
 ---
 
 # 🚀 Installation
 
-## Requirements
+### Requirements
 
-AutomationTools is designed for Linux environments, particularly cybersecurity distributions such as **Kali Linux**.
-
-### Core Requirements
-
+* Linux
 * Bash
-* Linux environment
+* Required security tools for the selected module
 
-### Security Tools
+Kali Linux is recommended because many of the supported security tools are readily available.
 
-Depending on the module being used:
-
-* Nmap
-* Subfinder
-* Assetfinder
-* Findomain
-* Amass
-* Gobuster
-* Dirsearch
-* httpx
-
-Not every tool is required for every module.
-
-AutomationTools includes dependency checking to identify which supported tools are currently available.
-
----
-
-## Clone the Repository
-
-### SSH
-
-```bash
-git clone git@github.com:bhavyasehgall/automationtools.git
-```
-
-### HTTPS
+### Clone
 
 ```bash
 git clone https://github.com/bhavyasehgall/automationtools.git
-```
-
-Enter the project directory:
-
-```bash
 cd automationtools
 ```
 
-Make the main controller executable:
+Make the main script executable:
 
 ```bash
 chmod +x automationtools.sh
 ```
 
-If required, restore permissions for libraries and modules:
+If necessary:
 
 ```bash
 chmod +x lib/*.sh
@@ -343,292 +238,116 @@ chmod +x modules/*.sh
 
 # ▶️ Usage
 
-The main interface is:
-
-```bash
-./automationtools.sh
-```
-
-## Display Help
+Display help:
 
 ```bash
 ./automationtools.sh --help
 ```
 
-or:
-
-```bash
-./automationtools.sh -h
-```
-
----
-
-## Display Version
+Display version:
 
 ```bash
 ./automationtools.sh --version
 ```
 
----
-
-## Check Dependencies
+Check dependencies:
 
 ```bash
 ./automationtools.sh --check
 ```
 
-This checks the availability of supported security tools and reports which dependencies are installed.
-
----
-
-# 🧭 Command-Line Options
-
-| Option           | Description                         |
-| ---------------- | ----------------------------------- |
-| `-t, --target`   | Target domain or IP address         |
-| `-u, --url`      | Target URL                          |
-| `-m, --module`   | Module to execute                   |
-| `--nmap-mode`    | Nmap scan mode                      |
-| `-w, --wordlist` | Custom directory-discovery wordlist |
-| `-v, --verbose`  | Enable verbose output               |
-| `-c, --check`    | Check available dependencies        |
-| `-h, --help`     | Display help                        |
-| `--version`      | Display version                     |
-
-### Available Modules
-
-```text
-nmap
-subdomains
-directory
-full
-```
-
----
-
-# 🔄 Example Workflows
-
-## Network Reconnaissance
+Run Nmap:
 
 ```bash
-./automationtools.sh \
-    -t 192.168.1.10 \
-    -m nmap \
-    --nmap-mode service
+./automationtools.sh -t 192.168.1.1 -m nmap
 ```
 
----
-
-## Passive Subdomain Enumeration
+Run subdomain enumeration:
 
 ```bash
-./automationtools.sh \
-    -t example.com \
-    -m subdomains
+./automationtools.sh -t example.com -m subdomains
 ```
 
----
-
-## Directory Discovery
+Run directory discovery:
 
 ```bash
-./automationtools.sh \
-    -u http://example.com \
-    -m directory
+./automationtools.sh -t http://example.com -m directory
 ```
 
----
-
-## Full Workflow
-
-The `full` option can execute the toolkit's available reconnaissance workflow against a target where supported.
+Run a complete workflow:
 
 ```bash
-./automationtools.sh \
-    -t example.com \
-    -m full
+./automationtools.sh -t example.com -m full
 ```
 
-> Only use the toolkit against systems, networks, domains, and applications for which you have explicit authorization.
+Interactive mode:
+
+```bash
+./automationtools.sh --interactive
+```
 
 ---
 
-# 📂 Results
+# 📁 Results
 
-AutomationTools stores generated output inside:
+Results are stored under:
 
 ```text
 results/
+└── <target>_<timestamp>/
+    ├── nmap/
+    ├── subdomains/
+    └── directory/
 ```
 
-This keeps generated scan data separate from the source code and helps maintain an organized project structure.
-
-A typical project state may look like:
-
-```text
-AutomationTools/
-│
-├── automationtools.sh
-├── lib/
-├── modules/
-│
-└── results/
-    ├── target_nmap_*.txt
-    ├── target_subdomains_*.txt
-    └── target_directory_*.txt
-```
-
-Result filenames include target information and timestamps where applicable.
-
-The repository contains a `.gitkeep` file inside `results/` so the directory structure remains available in Git while generated scan results remain local.
+This keeps individual reconnaissance runs separated and easier to review.
 
 ---
 
-# 🧪 Validation & Testing
+# 🧠 What I Learned
 
-Before running a module, AutomationTools performs input validation appropriate to the selected operation.
+This project helped me practice:
 
-Examples include:
-
-* Domain validation
-* IPv4 validation
-* URL validation
-* Wordlist path validation
-* Dependency checks
-
-### Bash Syntax Checks
-
-Individual files can also be checked manually:
-
-```bash
-bash -n automationtools.sh
-bash -n lib/*.sh
-bash -n modules/*.sh
-```
-
----
-
-# 🛠️ Design Principles
-
-AutomationTools is built around several engineering principles.
-
-### Modularity
-
-Each major reconnaissance capability is isolated into its own module.
-
-### Reusability
-
-Common functionality is placed into shared libraries instead of being duplicated across scripts.
-
-### Validation
-
-User input is validated before being passed to security tools.
-
-### Dependency Awareness
-
-The toolkit detects available tools instead of assuming every dependency is installed.
-
-### Maintainability
-
-The project separates responsibilities:
-
-```text
-Controller
-    ↓
-Shared Libraries
-    ↓
-Security Modules
-    ↓
-Results
-```
-
-This makes individual components easier to understand, test, and modify.
-
-### Reproducibility
-
-Structured command-line options and standardized result handling make repeated testing more consistent.
-
----
-
-# 🔐 Authorized Use
-
-AutomationTools is intended for:
-
-* Personal cybersecurity laboratories
-* CTF and training environments
-* Systems you own
-* Applications you are authorized to test
-* Educational cybersecurity research
-* Controlled security assessments
-
-**Do not use this toolkit against systems, networks, domains, or applications without explicit authorization.**
-
-The responsibility for obtaining appropriate authorization and complying with applicable laws and regulations rests with the user.
-
----
-
-# 🗺️ Roadmap
-
-Potential future improvements include:
-
-* JSON result export
-* Configurable output formats
-* Improved logging levels
-* Configuration file support
-* Additional reconnaissance modules
-* Improved dependency management
-* Better result parsing and summaries
-* Unit-style tests for Bash components
-* Automated CI syntax testing
-* Optional report generation
-* Improved module/plugin registration
-
-The roadmap may change as the project develops.
-
----
-
-# 📜 Version History
-
-## v2.0.0
-
-Major architectural refactor introducing:
-
-* Central CLI controller
-* Modular project structure
-* Shared Bash libraries
-* Dependency checking
+* Bash scripting
+* Shell argument parsing
+* Modular script design
 * Input validation
-* Centralized result handling
-* Configurable Nmap modes
-* Multi-tool subdomain enumeration
-* Gobuster / Dirsearch directory discovery
-* Improved maintainability
-
-## v1.0.0
-
-Initial AutomationTools release containing independent Bash scripts for:
-
-* Nmap scanning
-* Subdomain enumeration
-* Directory discovery
-
-The V1 implementation remains available in Git history through the `v1.0.0` tag.
+* Dependency management
+* Security-tool integration
+* File and directory handling
+* Automation workflows
+* Structured result management
+* Maintainable security scripting
 
 ---
 
-# 👨‍💻 Author
+# 🛣️ Roadmap
 
-**Bhavya Sehgal**
+Potential future improvements:
 
-Cybersecurity Student | Bash & Security Automation
-
-GitHub:
-https://github.com/bhavyasehgall
+* Automated Bash syntax testing
+* ShellCheck integration
+* More reconnaissance modules
+* Improved output formats
+* JSON result generation
+* Better logging
+* More robust test coverage
+* GitHub Actions CI
 
 ---
 
-# 📄 License
+# 📜 License
 
 This project is licensed under the **MIT License**.
 
 See [`LICENSE`](LICENSE) for details.
+
+---
+
+## 👤 Author
+
+**Bhavya Sehgal**
+
+Cybersecurity | VAPT | Security Automation | Linux
+
+GitHub: https://github.com/bhavyasehgall
