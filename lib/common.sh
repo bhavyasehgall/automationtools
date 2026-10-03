@@ -1,136 +1,103 @@
 #!/usr/bin/env bash
 
-# Prevent accidental re-loading
-if [[ "${AUTOMATIONTOOLS_COMMON_LOADED:-false}" == true ]]; then
-    return
-fi
+# AutomationTools
+# Shared utility functions
 
-AUTOMATIONTOOLS_COMMON_LOADED=true
+set -Eeuo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RESULTS_ROOT="$PROJECT_ROOT/results"
+RESULTS_BASE="${SCRIPT_DIR}/results"
+RUN_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 
 RUN_DIR=""
 
-info() {
-    echo -e "${BLUE}[*]${NC} $1"
+init_results() {
+    local target="${1:-target}"
+
+    mkdir -p "$RESULTS_BASE"
+
+    local safe_target
+    safe_target="$(sanitize_filename "$target")"
+
+    RUN_DIR="${RESULTS_BASE}/${safe_target}_${RUN_TIMESTAMP}"
+
+    mkdir -p "$RUN_DIR"
 }
 
-success() {
-    echo -e "${GREEN}[+]${NC} $1"
+sanitize_filename() {
+    local input="${1:-target}"
+
+    printf '%s' "$input" |
+        tr -c '[:alnum:]._- ' '_' |
+        tr ' ' '_' |
+        sed 's/_\{2,\}/_/g'
 }
 
-warning() {
-    echo -e "${YELLOW}[!]${NC} $1"
+log_info() {
+    printf '[INFO] %s\n' "$*"
 }
 
-error() {
-    echo -e "${RED}[-]${NC} $1" >&2
+log_success() {
+    printf '[+] %s\n' "$*"
+}
+
+log_warning() {
+    printf '[!] %s\n' "$*" >&2
+}
+
+log_error() {
+    printf '[ERROR] %s\n' "$*" >&2
 }
 
 die() {
-    error "$1"
+    log_error "$*"
     exit 1
 }
 
 debug() {
-    if [[ "${VERBOSE:-false}" == true ]]; then
-        echo -e "${CYAN}[DEBUG]${NC} $1"
+    if [[ "${VERBOSE:-false}" == "true" ]]; then
+        printf '[DEBUG] %s\n' "$*"
     fi
 }
 
-timestamp() {
-    date '+%Y-%m-%d %H:%M:%S'
+require_command() {
+    local command_name="$1"
+
+    command -v "$command_name" >/dev/null 2>&1 ||
+        die "Required command not found: $command_name"
 }
 
-timestamp_file() {
-    date '+%Y%m%d_%H%M%S'
-}
-
-sanitize_filename() {
-
-    local value="$1"
-
-    value="${value#http://}"
-    value="${value#https://}"
-
-    echo "$value" |
-        tr '/:?' '_' |
-        tr -cd '[:alnum:]_.-'
-}
-
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-print_banner() {
-
-    echo
-    echo "=============================================="
-    echo "           AutomationTools v2.0"
-    echo "      Reconnaissance Automation Suite"
-    echo "=============================================="
-    echo
-}
-
-init_results() {
-
-    local target_name="${1:-automation}"
-    local timestamp_value
-
-    timestamp_value="$(timestamp_file)"
-
-    mkdir -p "$RESULTS_ROOT"
-
-    RUN_DIR="$RESULTS_ROOT/${target_name}_${timestamp_value}"
-
-    mkdir -p "$RUN_DIR"
-
-    debug "Created result directory: $RUN_DIR"
-}
-
-save_metadata() {
-
+write_metadata_json() {
     local target="$1"
+    local module="${2:-unknown}"
 
-    cat > "$RUN_DIR/metadata.txt" <<EOF
-AutomationTools
-===============
+    [[ -n "$RUN_DIR" ]] ||
+        die "Result directory has not been initialized."
 
-Target: $target
-Started: $(timestamp)
-Version: ${VERSION:-unknown}
+    cat > "${RUN_DIR}/metadata.json" <<EOF
+{
+  "project": "AutomationTools",
+  "version": "2.0.0",
+  "target": "$(printf '%s' "$target" | sed 's/"/\\"/g')",
+  "module": "$(printf '%s' "$module" | sed 's/"/\\"/g')",
+  "timestamp": "${RUN_TIMESTAMP}",
+  "hostname": "$(hostname)",
+  "user": "${USER:-unknown}",
+  "os": "$(uname -s)",
+  "kernel": "$(uname -r)",
+  "architecture": "$(uname -m)"
+}
 EOF
 }
 
-require_file() {
+create_module_dir() {
+    local module="$1"
 
-    local file="$1"
+    [[ -n "$RUN_DIR" ]] ||
+        die "Result directory has not been initialized."
 
-    [[ -f "$file" ]] || die "File does not exist: $file"
-}
+    mkdir -p "${RUN_DIR}/${module}"
 
-require_directory() {
-
-    local directory="$1"
-
-    [[ -d "$directory" ]] ||
-        die "Directory does not exist: $directory"
-}
-
-handle_error() {
-
-    local exit_code="$?"
-
-    if [[ "$exit_code" -ne 0 ]]; then
-        error "Command failed with exit code $exit_code."
-    fi
+    printf '%s\n' "${RUN_DIR}/${module}"
 }
