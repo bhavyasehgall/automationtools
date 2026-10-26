@@ -1,0 +1,20 @@
+name: Bash CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Bash syntax
+        run: bash -n automationtools.sh lib/*.sh modules/*.sh tests/*.sh
+      - name: Run CLI smoke tests
+        run: bash tests/test_cli.sh
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          severity: warning

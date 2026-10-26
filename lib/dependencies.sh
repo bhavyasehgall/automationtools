@@ -1,65 +1,23 @@
 #!/usr/bin/env bash
-
 set -Eeuo pipefail
 
-REQUIRED_TOOLS=(
-    "bash"
-    "nmap"
-)
-
-OPTIONAL_TOOLS=(
-    "subfinder"
-    "assetfinder"
-    "findomain"
-    "amass"
-    "httpx"
-    "gobuster"
-    "dirsearch"
-)
+REQUIRED_TOOLS=("bash")
+OPTIONAL_TOOLS=("nmap" "subfinder" "assetfinder" "findomain" "gobuster" "dirsearch")
 
 check_dependencies() {
-
-    echo
-    echo "Dependency Check"
-    echo "────────────────────────────────"
-    echo
-
-    local missing_required=0
-
-    echo "Required:"
-    echo
-
+    local missing=0 tool
+    printf '\nDependency Check\n────────────────────────────────\n\n'
+    printf 'Required:\n'
     for tool in "${REQUIRED_TOOLS[@]}"; do
-
-        if command -v "$tool" >/dev/null 2>&1; then
-            echo "  ✓ $tool"
-        else
-            echo "  ✗ $tool"
-            missing_required=1
-        fi
-
+        if command -v "$tool" >/dev/null 2>&1; then printf '  ✓ %s\n' "$tool"
+        else printf '  ✗ %s\n' "$tool"; missing=1; fi
     done
-
-    echo
-    echo "Optional:"
-    echo
-
+    printf '\nOptional (needed only for selected modules):\n'
     for tool in "${OPTIONAL_TOOLS[@]}"; do
-
-        if command -v "$tool" >/dev/null 2>&1; then
-            echo "  ✓ $tool"
-        else
-            echo "  - $tool"
-        fi
-
+        if command -v "$tool" >/dev/null 2>&1; then printf '  ✓ %s\n' "$tool"
+        else printf '  - %s\n' "$tool"; fi
     done
-
-    echo
-
-    if [[ "$missing_required" -eq 1 ]]; then
-        echo "Status: MISSING REQUIRED DEPENDENCIES"
-        return 1
-    fi
-
-    echo "Status: READY"
+    printf '\n'
+    if ((missing)); then print_error "Missing required dependencies."; return 1; fi
+    print_success "Required dependencies are available."
 }

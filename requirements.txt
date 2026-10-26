@@ -1,0 +1,14 @@
+# AutomationTools external system dependencies (not Python packages).
+# Install with: ./install_tools.sh [--all | --required | --module nmap|subdomains|directory]
+# Do NOT run: pip install -r requirements.txt
+
+[required]
+bash
+
+[optional]
+nmap
+subfinder
+assetfinder
+findomain
+gobuster
+dirsearch
